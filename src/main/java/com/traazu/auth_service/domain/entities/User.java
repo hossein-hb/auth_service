@@ -34,6 +34,16 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @NotBlank(message = "First name is required!")
+    @Column(name = "first_name", nullable = false)
+    @Size(max = 20, message = "First name must be less than 20 characters!")
+    private String firstName;
+
+    @NotBlank(message = "Last name is required!")
+    @Column(name = "last_name", nullable = false)
+    @Size(max = 20, message = "last name must be less than 20 characters!")
+    private String lastName;
+
     @Email(message = "Email format is invalid!")
     @NotBlank(message = "Email is required!")
     @Column(name = "email", nullable = false, updatable = false, unique = true)
