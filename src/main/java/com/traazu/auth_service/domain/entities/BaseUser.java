@@ -50,13 +50,8 @@ public abstract class BaseUser {
     @Column(name = "email", nullable = false, updatable = false, unique = true)
     private String email;
 
-    @Size(min = 8, max = 20, message = "Password must be between 8 and 20 characters")
-    @Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*?])[A-Za-z\\d!@#$%^&*?]{8,20}$",
-        message = "Password must contain lowercase letters, uppercase letters, numbers, and at lease one special character like !, @, #, $, %, ^, &, * or ?"
-    )
-    @Column(name = "password", nullable = false, updatable = true)
-    private String password;
+    @Column(name = "hashed_password", nullable = false, updatable = true)
+    private String hashedPassword;
 
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Choosing role is required!")
@@ -68,7 +63,7 @@ public abstract class BaseUser {
     @Column(name = "account_status", nullable = false)
     private AccountStatus accountStatus;
 
-    @Column(name = "create_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
