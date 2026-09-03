@@ -8,7 +8,6 @@ import java.util.function.Function;
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import com.traazu.auth_service.domain.enums.UserRole;
 
@@ -22,7 +21,7 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration")
+    @Value("${jwt.expiration}")
     private long jwtExpiration;
 
     public String extractUsername(String token) {
@@ -38,16 +37,16 @@ public class JwtUtil {
         return claimsResolver.apply(allClaims);
     }
 
-    public String generateToken(UserDetails userDetails, UserRole role) {
+    public String generateToken(String username, UserRole role) {
         Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("role", role);
-        return buildToken(userDetails, extraClaims, jwtExpiration);
+        extraClaims.put("role", role.name());
+        return buildToken(username, extraClaims, jwtExpiration);
     }
 
-    public String buildToken(UserDetails userDetails, Map<String, Object> extraClaims, long expiration) {
+    public String buildToken(String username, Map<String, Object> extraClaims, long expiration) {
         return Jwts.builder()
                     .claims(extraClaims)
-                    .subject(userDetails.getUsername())
+                    .subject(username)
                     .issuedAt(new Date(System.currentTimeMillis()))
                     .expiration(new Date(System.currentTimeMillis() + expiration))
                     .signWith(getSignInKey())
@@ -58,11 +57,10 @@ public class JwtUtil {
         return extractAllClaims(token).getExpiration().before(new Date());
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        String username = userDetails.getUsername();
+    public boolean isTokenValid(String token, String username) {
         Claims allClaims = extractAllClaims(token);
         return allClaims.getSubject().equals(username)
-                & extractAllClaims(token).getExpiration().before(new Date());
+                & !extractAllClaims(token).getExpiration().before(new Date());
     }
 
     private Claims extractAllClaims(String token) {
