@@ -60,10 +60,14 @@ public class JwtUtil {
     }
 
     public boolean isTokenValid(String token, String username) {
-        Claims allClaims = extractAllClaims(token);
-        return allClaims.getSubject().equals(username)
-                & !extractAllClaims(token).getExpiration().before(new Date());
+        try {
+            Claims allClaims = extractAllClaims(token);
+            return allClaims.getSubject().equals(username);
+        } catch (Exception e) {
+            return false;
+        }
     }
+
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
