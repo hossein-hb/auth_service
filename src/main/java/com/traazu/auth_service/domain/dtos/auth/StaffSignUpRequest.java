@@ -1,4 +1,4 @@
-package com.traazu.auth_service.domain.dtos;
+package com.traazu.auth_service.domain.dtos.auth;
 
 import java.util.UUID;
 
