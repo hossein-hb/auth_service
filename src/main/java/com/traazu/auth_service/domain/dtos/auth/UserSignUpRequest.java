@@ -6,5 +6,6 @@ public record UserSignUpRequest(
     String lastName,
     String email,
     String password,
-    String repeatPassword
+    String repeatPassword,
+    DeviceInfo deviceInfo
 ) {}

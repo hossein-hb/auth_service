@@ -5,5 +5,6 @@ import com.traazu.auth_service.domain.enums.UserRole;
 public record LogInRequest(
     String username,
     String password,
-    UserRole role
+    UserRole role,
+    DeviceInfo deviceInfo
 ) {}
