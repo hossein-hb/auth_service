@@ -11,13 +11,14 @@ import com.traazu.auth_service.domain.dtos.auth.OtpVerificationRequest;
 import com.traazu.auth_service.domain.dtos.auth.UserSignUpRequest;
 import com.traazu.auth_service.domain.entities.User;
 import com.traazu.auth_service.domain.enums.AccountStatus;
-import com.traazu.auth_service.domain.enums.UserRole;
 import com.traazu.auth_service.repositories.UserRepository;
+import com.traazu.auth_service.security.CustomUserDetails;
 import com.traazu.auth_service.security.JwtUtil;
 import com.traazu.auth_service.services.auth.exceptions.DuplicateEmailException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidRegistrationTokenException;
 import com.traazu.auth_service.services.auth.exceptions.PasswordMismatchException;
 import com.traazu.auth_service.services.auth.exceptions.WeakPasswordException;
+import com.traazu.auth_service.services.otp.OtpService;
 
 import lombok.AllArgsConstructor;
 
@@ -29,6 +30,7 @@ public class SignUpService {
     private final PasswordEncoder passwordEncoder;
     private final OtpService otpService;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     private static final Pattern PASSWORD_PATTERN = 
         Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$");
@@ -85,8 +87,15 @@ public class SignUpService {
         User user = createUser(request);
         userRepository.save(user);
         
-        String jwtToken = jwtUtil.generateToken(request.email(), UserRole.USER);
-        return new AuthResponse(jwtToken);
+        String accessJwtToken = jwtUtil.generateAccessToken(new CustomUserDetails(user));
+        String refreshJwtToken = jwtUtil.generateRefreshToken(user.getId());
+        
+        String deviceId = (request.deviceInfo() != null) ? request.deviceInfo().deviceId() : null;
+        String deviceName = (request.deviceInfo() != null) ? request.deviceInfo().deviceName() : "Unknown Device";
+
+        refreshTokenService.saveRefreshToken(user.getId(), refreshJwtToken, deviceId, deviceName);
+
+        return new AuthResponse(accessJwtToken, refreshJwtToken);
 
     }
     
