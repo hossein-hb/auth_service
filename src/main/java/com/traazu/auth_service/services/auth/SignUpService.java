@@ -18,7 +18,7 @@ import com.traazu.auth_service.services.auth.exceptions.DuplicateEmailException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidRegistrationTokenException;
 import com.traazu.auth_service.services.auth.exceptions.PasswordMismatchException;
 import com.traazu.auth_service.services.auth.exceptions.WeakPasswordException;
-import com.traazu.auth_service.services.otp.OtpService;
+import com.traazu.auth_service.services.otp.SignUpOtpService;
 
 import lombok.AllArgsConstructor;
 
@@ -28,7 +28,7 @@ public class SignUpService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final OtpService otpService;
+    private final SignUpOtpService signUpOtpService;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
 
@@ -60,16 +60,16 @@ public class SignUpService {
             );
         }
 
-        otpService.generateAndSaveOtp(email);
+        signUpOtpService.generateAndSaveOtp(email);
     }
 
     public String checkVerifivationCodeForSignUp(OtpVerificationRequest request) {
-        return otpService.verifyAndConsumeOtp(request.email(), request.otpCode());
+        return signUpOtpService.verifyAndConsumeOtp(request.email(), request.otpCode());
     }
 
     public AuthResponse completeInformaion(UserSignUpRequest request) {
 
-        if (!otpService.verifyAndConsumeToken(request.email(), request.token())) {
+        if (!signUpOtpService.verifyAndConsumeToken(request.email(), request.token())) {
             throw new InvalidRegistrationTokenException("Invalid token!");
         }
 
