@@ -1,54 +1,49 @@
 package com.traazu.auth_service.services.otp;
 
-import java.time.Duration;
-
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.traazu.auth_service.services.otp.enums.OtpTarget;
+import com.traazu.auth_service.services.otp.prefixes.OtpPrefixes;
 
 import lombok.AllArgsConstructor;
 
 @Service
-@AllArgsConstructor 
+@AllArgsConstructor
 public class AttemptOtpService {
 
     private final StringRedisTemplate redis;
-    private static final int MAX_ATTEMPTS = 5;
-    private static final Duration ATTEMPT_TTL = Duration.ofMinutes(10);
 
-    private int getAttempts(String username, OtpTarget otpTarget) {
-        String key = getKey(username, otpTarget);
-        Object value = redis.opsForValue().get(key);
+    private int getAttempts(String username, OtpPrefixes otpPrefixes) {
+        String key = getKey(username, otpPrefixes);
+        String value = redis.opsForValue().get(key);
         if (value == null) {
             return 0;
         }
         try {
-            return Integer.parseInt(value.toString());
+            return Integer.parseInt(value);
         } catch (NumberFormatException e) {
             return 0;
         }
     }
 
-    public void incrementAttempts(String username, OtpTarget otpTarget) {
-        String key = getKey(username, otpTarget);
+    public void incrementAttempts(String username, OtpPrefixes otpPrefixes) {
+        String key = getKey(username, otpPrefixes);
         Long currentAttempts = redis.opsForValue().increment(key);
         if (currentAttempts != null && currentAttempts == 1L) {
-            redis.expire(key, ATTEMPT_TTL);
+            redis.expire(key, otpPrefixes.getAttemptTTL());
         }
     }
 
-    public void resetAttempts(String username, OtpTarget otpTarget) {
-        String key = getKey(username, otpTarget);
+    public void resetAttempts(String username, OtpPrefixes otpPrefixes) {
+        String key = getKey(username, otpPrefixes);
         redis.delete(key);
     }
 
-    public boolean isAttemptsExceeded(String username, OtpTarget otpTarget) {
-        return getAttempts(username, otpTarget) >= MAX_ATTEMPTS;
+    public boolean isAttemptsExceeded(String username, OtpPrefixes otpPrefixes) {
+        return getAttempts(username, otpPrefixes) >= otpPrefixes.getMaxAttempts();
     }
 
-    private String getKey(String username, OtpTarget target) {
-        return target.getPrefix() + username;
+    private String getKey(String username, OtpPrefixes otpPrefixes) {
+        return otpPrefixes.getAttemptEnterOtpPrefix() + username;
     }
-    
 }
