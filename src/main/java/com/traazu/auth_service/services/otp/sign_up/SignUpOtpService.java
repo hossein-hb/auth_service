@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.traazu.auth_service.SignUpScriptManager;
 import com.traazu.auth_service.services.auth.exceptions.InvalidOtpException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidTokenException;
 import com.traazu.auth_service.services.auth.exceptions.TokenMismatchException;
@@ -25,8 +24,7 @@ public class SignUpOtpService extends AbstractOtpService {
     public SignUpOtpService(LockOtpService lockOtpService,
                             AttemptOtpService attemptOtpService,
                             StringRedisTemplate redisTemplate,
-                            SignUpOtpPrefixes prefixes,
-                            SignUpScriptManager scriptManager) {
+                            SignUpOtpPrefixes prefixes) {
 
         super(lockOtpService, attemptOtpService, redisTemplate);
         this.prefixes = prefixes;
