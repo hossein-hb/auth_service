@@ -11,12 +11,12 @@ import com.traazu.auth_service.services.otp.prefixes.SignUpOtpPrefixes;
 public class OtpConfig {
 
     @Bean
-    public OtpPrefixes signUpOtpPrefixes() {
+    public SignUpOtpPrefixes signUpOtpPrefixes() {
         return new SignUpOtpPrefixes();
     }
 
     @Bean
-    public OtpPrefixes changePasswordOtpPrefixes() {
+    public ChangePasswordOtpPrefixes changePasswordOtpPrefixes() {
         return new ChangePasswordOtpPrefixes();
     }
 }
