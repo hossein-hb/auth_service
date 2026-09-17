@@ -18,7 +18,7 @@ import com.traazu.auth_service.services.auth.exceptions.DuplicateEmailException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidRegistrationTokenException;
 import com.traazu.auth_service.services.auth.exceptions.PasswordMismatchException;
 import com.traazu.auth_service.services.auth.exceptions.WeakPasswordException;
-import com.traazu.auth_service.services.otp.SignUpOtpService;
+import com.traazu.auth_service.services.otp.sign_up.SignUpOtpService;
 
 import lombok.AllArgsConstructor;
 
@@ -52,7 +52,7 @@ public class SignUpService {
     }
 
 
-    public void sendVerifivationCodeForSignUp(String email) {
+    public String sendVerifivationCodeForSignUp(String email) {
 
         if (userRepository.existsByEmail(email)) {
             throw new DuplicateEmailException(
@@ -60,7 +60,7 @@ public class SignUpService {
             );
         }
 
-        signUpOtpService.generateAndSaveOtp(email);
+        return signUpOtpService.generateAndSaveOtp(email);
     }
 
     public String checkVerifivationCodeForSignUp(OtpVerificationRequest request) {
