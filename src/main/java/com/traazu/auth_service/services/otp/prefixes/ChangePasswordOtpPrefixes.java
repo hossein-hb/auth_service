@@ -58,5 +58,9 @@ public class ChangePasswordOtpPrefixes implements OtpPrefixes {
     public Duration getTokenTTL() {
         return Duration.ofMinutes(10);
     }
+
+    public String getRoleOtpPrefix() {
+        return "change:password:otp:role:";
+    }
     
 }
