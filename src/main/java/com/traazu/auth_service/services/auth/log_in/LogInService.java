@@ -1,4 +1,4 @@
-package com.traazu.auth_service.services.auth;
+package com.traazu.auth_service.services.auth.log_in;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +12,7 @@ import com.traazu.auth_service.repositories.StaffRepository;
 import com.traazu.auth_service.repositories.UserRepository;
 import com.traazu.auth_service.security.CustomUserDetails;
 import com.traazu.auth_service.security.JwtUtil;
+import com.traazu.auth_service.services.auth.RefreshTokenService;
 import com.traazu.auth_service.services.auth.exceptions.AccountLockedException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidPasswordException;
 import com.traazu.auth_service.services.auth.exceptions.RoleNotFoundException;
