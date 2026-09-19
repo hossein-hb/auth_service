@@ -1,14 +1,18 @@
 package com.traazu.auth_service.services.auth;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.traazu.auth_service.domain.dtos.CheckIpRequest;
 import com.traazu.auth_service.domain.dtos.auth.AuthResponse;
 import com.traazu.auth_service.domain.dtos.auth.OtpVerificationRequest;
-import com.traazu.auth_service.domain.dtos.auth.UserSignUpRequest;
+import com.traazu.auth_service.domain.dtos.auth.UserSignUpInfos;
+import com.traazu.auth_service.domain.dtos.auth.SignUpRequest;
 import com.traazu.auth_service.domain.entities.User;
 import com.traazu.auth_service.domain.enums.AccountStatus;
 import com.traazu.auth_service.repositories.UserRepository;
@@ -31,11 +35,16 @@ public class SignUpService {
     private final SignUpOtpService signUpOtpService;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
+    private final StringRedisTemplate redis;
+
+    private static final Duration IP_COOLDOWN_TTL = Duration.ofMinutes(5);
+    private static final Long MAX_ATTEMPTS = 20L;
+    private static final String IP_RATE_LIMIT = "ratelimit:signup:ip:";
 
     private static final Pattern PASSWORD_PATTERN = 
         Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$");
 
-    private User createUser(UserSignUpRequest request) {
+    private User createUser(UserSignUpInfos request) {
 
         String hashedPassword = passwordEncoder.encode(request.password());
 
@@ -51,23 +60,24 @@ public class SignUpService {
 
     }
 
+    public String sendVerifivationCodeForSignUp(SignUpRequest request) {
 
-    public String sendVerifivationCodeForSignUp(String email) {
+        checkIpRateLimit(request.ipAddress());
 
-        if (userRepository.existsByEmail(email)) {
+        if (userRepository.existsByEmail(request.emial())) {
             throw new DuplicateEmailException(
-                "Email '" + email + "' is already registered"
+                "Email '" + request.emial() + "' is already registered"
             );
         }
 
-        return signUpOtpService.generateAndSaveOtp(email);
+        return signUpOtpService.generateAndSaveOtp(request.emial());
     }
 
     public String checkVerifivationCodeForSignUp(OtpVerificationRequest request) {
         return signUpOtpService.verifyAndConsumeOtp(request.email(), request.otpCode());
     }
 
-    public AuthResponse completeInformaion(UserSignUpRequest request) {
+    public AuthResponse completeInformaion(UserSignUpInfos request) {
 
         if (!signUpOtpService.verifyAndConsumeToken(request.email(), request.token())) {
             throw new InvalidRegistrationTokenException("Invalid token!");
@@ -97,6 +107,13 @@ public class SignUpService {
 
         return new AuthResponse(accessJwtToken, refreshJwtToken);
 
+    }
+
+    private void checkIpRateLimit(String ipAddress) {
+        String redisIpKey = IP_RATE_LIMIT + ipAddress;
+        CheckIpRequest checkIpRequest = new CheckIpRequest(redis, redisIpKey, IP_COOLDOWN_TTL, MAX_ATTEMPTS);
+
+        IpRateLimiter.checkIp(checkIpRequest);
     }
     
 }
