@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.traazu.auth_service.domain.dtos.CheckIpRequest;
 import com.traazu.auth_service.domain.dtos.auth.AuthResponse;
 import com.traazu.auth_service.domain.dtos.auth.LogInRequest;
 import com.traazu.auth_service.domain.entities.BaseUser;
@@ -16,6 +17,7 @@ import com.traazu.auth_service.repositories.StaffRepository;
 import com.traazu.auth_service.repositories.UserRepository;
 import com.traazu.auth_service.security.CustomUserDetails;
 import com.traazu.auth_service.security.JwtUtil;
+import com.traazu.auth_service.services.auth.IpRateLimiter;
 import com.traazu.auth_service.services.auth.RefreshTokenService;
 import com.traazu.auth_service.services.auth.exceptions.AccountLockedException;
 import com.traazu.auth_service.services.auth.exceptions.TooManyRequestsException;
@@ -85,7 +87,7 @@ public class LogInService {
         
     }
 
-    public void increaseUsernameRateLimit(String username) {
+    private void increaseUsernameRateLimit(String username) {
 
         String userKey = LogInRedisPrefixes.USERNAME_RATE_LIMIT + username;
 
@@ -105,32 +107,14 @@ public class LogInService {
 
     }
 
-    public void checkIpRateLimit(String ipAddress) {
+    private void checkIpRateLimit(String ipAddress) {
+        String redisIpKey = LogInRedisPrefixes.IP_RATE_LIMIT + ipAddress;
+        CheckIpRequest checkIpRequest = new CheckIpRequest(redis, redisIpKey, IP_COOLDOWN_TTL, MAX_ATTEMPTS);
 
-        String ipKey = LogInRedisPrefixes.IP_RATE_LIMIT + ipAddress;
-
-        Long result = redis.execute(
-            LogInScripts.RATE_LIMIT_CHECKER,
-            Collections.singletonList(ipKey),
-            String.valueOf(IP_COOLDOWN_TTL.toMillis()),
-            String.valueOf(MAX_ATTEMPTS)
-        );
-
-        if (result == null) {
-            log.error("Rate limit script returned null for ip={}", ipAddress);
-            throw new TooManyRequestsException("Rate limit check failed");
-        }
-        if (result == 0) {
-            throw new TooManyRequestsException("Ip blocked!");
-        }
-        if (result != 1) {
-            log.error("Rate limit script returned invalid output for ip={}", ipAddress);
-            throw new TooManyRequestsException("Invalid output!");
-        }
-
+        IpRateLimiter.checkIp(checkIpRequest);
     }
 
-    public void resetUsernameAttempts(String username) {
+    private void resetUsernameAttempts(String username) {
         String userKey = LogInRedisPrefixes.USERNAME_RATE_LIMIT + username;
         redis.delete(userKey);
     }
