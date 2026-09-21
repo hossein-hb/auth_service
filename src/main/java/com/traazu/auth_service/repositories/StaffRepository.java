@@ -5,12 +5,11 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.traazu.auth_service.domain.entities.Staff;
 import com.traazu.auth_service.domain.enums.AccountStatus;
 
-public interface StaffRepository extends JpaRepository<Staff, UUID> {
+public interface StaffRepository extends BaseUserRepository<Staff, UUID> {
 
     Optional<Staff> findByEmail(String email);
 
