@@ -1,8 +1,10 @@
-package com.traazu.auth_service.services.otp.prefixes;
+package com.traazu.auth_service.redis.prefixes.impl;
 
 import java.time.Duration;
 
-public class ChangePasswordOtpPrefixes implements OtpPrefixes {
+import com.traazu.auth_service.redis.prefixes.RedisPrefixes;
+
+public class ChangePasswordRedisPrefixes implements RedisPrefixes {
 
     @Override
     public String getLockPrefix() {
