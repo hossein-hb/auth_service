@@ -1,13 +1,16 @@
-package com.traazu.auth_service.services.otp;
+package com.traazu.auth_service.redis;
 
 import java.security.SecureRandom;
 
+import org.springframework.stereotype.Component;
+
+@Component 
 public class OtpGenerator {
 
     private final SecureRandom secureRandom;
 
-    public OtpGenerator() {
-        this.secureRandom = new SecureRandom();
+    public OtpGenerator(SecureRandom secureRandom) {
+        this.secureRandom = secureRandom;
     }
 
     public String generateCode() {
