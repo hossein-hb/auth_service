@@ -1,4 +1,4 @@
-package com.traazu.auth_service.services.auth;
+package com.traazu.auth_service.redis;
 
 import java.util.Collections;
 

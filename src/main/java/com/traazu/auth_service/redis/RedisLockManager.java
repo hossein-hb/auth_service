@@ -1,4 +1,4 @@
-package com.traazu.auth_service.services.otp;
+package com.traazu.auth_service.redis;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import com.traazu.auth_service.services.prefixes.RedisPrefixes;
+import com.traazu.auth_service.redis.prefixes.RedisPrefixes;
 
 import lombok.RequiredArgsConstructor;
 
