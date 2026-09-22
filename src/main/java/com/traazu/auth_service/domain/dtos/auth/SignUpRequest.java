@@ -11,7 +11,7 @@ public record SignUpRequest(
     @Size(max = 100)
     @NotBlank(message = "The email has not been defined.")
     @Email(message = "The email format is invalid.")
-    String emial,
+    String email,
 
     @NotBlank(message = "The ipAddress has not been defined.")
     String ipAddress,
