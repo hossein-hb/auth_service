@@ -1,4 +1,4 @@
-package com.traazu.auth_service.services.otp.sign_up;
+package com.traazu.auth_service.redis.sign_up;
 
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;

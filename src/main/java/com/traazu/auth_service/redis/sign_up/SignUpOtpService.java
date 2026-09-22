@@ -1,34 +1,29 @@
-package com.traazu.auth_service.services.otp.sign_up;
+package com.traazu.auth_service.redis.sign_up;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
 
+import com.traazu.auth_service.redis.AbstractOtpService;
+import com.traazu.auth_service.redis.OtpGenerator;
+import com.traazu.auth_service.redis.RedisAttemptManager;
+import com.traazu.auth_service.redis.RedisLockManager;
+import com.traazu.auth_service.redis.prefixes.impl.sign_up.SignUpRedisPrefixes;
 import com.traazu.auth_service.services.auth.exceptions.InvalidOtpException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidTokenException;
 import com.traazu.auth_service.services.auth.exceptions.TokenMismatchException;
 import com.traazu.auth_service.services.auth.exceptions.TooManyRequestsException;
-import com.traazu.auth_service.services.otp.AbstractOtpService;
-import com.traazu.auth_service.services.otp.AttemptOtpService;
-import com.traazu.auth_service.services.otp.LockOtpService;
-import com.traazu.auth_service.services.otp.prefixes.SignUpOtpPrefixes;
 
-@Service
 public class SignUpOtpService extends AbstractOtpService {
 
-    private final SignUpOtpPrefixes prefixes;
+    private final SignUpRedisPrefixes prefixes;
 
-    public SignUpOtpService(LockOtpService lockOtpService,
-                            AttemptOtpService attemptOtpService,
-                            StringRedisTemplate redisTemplate,
-                            SignUpOtpPrefixes prefixes) {
-
-        super(lockOtpService, attemptOtpService, redisTemplate);
+    public SignUpOtpService(StringRedisTemplate redis, OtpGenerator otpGenerator, RedisLockManager lockManager,
+            RedisAttemptManager attemptManager, SignUpRedisPrefixes prefixes) {
+        super(redis, otpGenerator, lockManager, attemptManager);
         this.prefixes = prefixes;
-
     }
 
     public String generateAndSaveOtp(String username) {
@@ -37,7 +32,7 @@ public class SignUpOtpService extends AbstractOtpService {
         String otpKey = prefixes.getOtpPrefix() + username;
         String otpCode = getOtpGenerator().generateCode();
 
-        Long result = getRedisTemplate().execute(
+        Long result = getRedis().execute(
                                             SignUpScripts.OTP_SAVER, 
                                             List.of(lockKey, otpKey),
                                             String.valueOf(prefixes.getLockTTL().toMillis()), 
@@ -46,7 +41,7 @@ public class SignUpOtpService extends AbstractOtpService {
                                         );
 
         if (result == null || result == 0L) {
-            long remainingSeconds = getLockOtpService().getRemainingSeconds(username, prefixes);
+            long remainingSeconds = getLockManager().getRemainingSeconds(username, prefixes);
             throw new TooManyRequestsException(String.format(
                 "An OTP has already been sent to your email. " +
                 "Please wait %d seconds before requesting a new one.",
@@ -59,14 +54,14 @@ public class SignUpOtpService extends AbstractOtpService {
 
     public String verifyAndConsumeOtp(String username, String code) {
 
-        if (getLockOtpService().isEnterOtpLocked(username, prefixes)) {
+        if (getLockManager().isEnterOtpLocked(username, prefixes)) {
             throw new TooManyRequestsException(
                 "Too many failed OTP attempts. Please try again later."
             );
         }
 
-        if (getAttemptOtpService().isAttemptsExceeded(username, prefixes)) {
-            getLockOtpService().tryLockEnterOtp(username, prefixes, prefixes.getLockEnterOtpTTL());
+        if (getAttemptManager().isAttemptsExceeded(username, prefixes)) {
+            getLockManager().tryLockEnterOtp(username, prefixes, prefixes.getLockEnterOtpTTL());
             throw new TooManyRequestsException(
                 "Too many failed OTP attempts. Please wait and request a new OTP."
             );
@@ -74,25 +69,25 @@ public class SignUpOtpService extends AbstractOtpService {
 
         String otpKey = prefixes.getOtpPrefix() + username;
 
-        Long result = getRedisTemplate().execute(
+        Long result = getRedis().execute(
                                             SignUpScripts.OTP_CONSUMER, 
                                             Collections.singletonList(otpKey), 
                                             code
                                         );
 
         if (result == null || result == -1L) {
-            getAttemptOtpService().incrementAttempts(username, prefixes);
+            getAttemptManager().incrementAttempts(username, prefixes);
             throw new InvalidOtpException(
                 "OTP has expired or does not exist. Please request a new OTP."
             );
         }
 
         if (result == 0L) {
-            getAttemptOtpService().incrementAttempts(username, prefixes);
+            getAttemptManager().incrementAttempts(username, prefixes);
             throw new InvalidOtpException("Invalid OTP code. Please try again.");
         }
 
-        getAttemptOtpService().resetAttempts(username, prefixes);
+        getAttemptManager().resetAttempts(username, prefixes);
 
         return generateAndSaveToken(username);
     }
@@ -101,14 +96,14 @@ public class SignUpOtpService extends AbstractOtpService {
         String token = UUID.randomUUID().toString();
         String key = prefixes.getTokenPrefix() + username;
 
-        getRedisTemplate().opsForValue().set(key, token, prefixes.getTokenTTL());
+        getRedis().opsForValue().set(key, token, prefixes.getTokenTTL());
         return token;
     }
 
     public boolean verifyAndConsumeToken(String username, String token) {
         String key = prefixes.getTokenPrefix() + username;
         
-        Long result = getRedisTemplate().execute(
+        Long result = getRedis().execute(
                                             SignUpScripts.TOKEN_CONSUMER, 
                                             Collections.singletonList(key),
                                             token
