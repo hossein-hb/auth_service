@@ -17,7 +17,7 @@ import com.traazu.auth_service.repositories.StaffRepository;
 import com.traazu.auth_service.repositories.UserRepository;
 import com.traazu.auth_service.security.CustomUserDetails;
 import com.traazu.auth_service.security.JwtUtil;
-import com.traazu.auth_service.services.auth.IpRateLimiter;
+import com.traazu.auth_service.redis.IpRateLimiter;
 import com.traazu.auth_service.services.auth.RefreshTokenService;
 import com.traazu.auth_service.services.auth.exceptions.AccountLockedException;
 import com.traazu.auth_service.services.auth.exceptions.TooManyRequestsException;

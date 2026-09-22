@@ -22,7 +22,8 @@ import com.traazu.auth_service.services.auth.exceptions.RoleNotFoundException;
 import com.traazu.auth_service.services.auth.exceptions.RoleNotSetException;
 import com.traazu.auth_service.services.auth.exceptions.UserNotFoundException;
 import com.traazu.auth_service.services.auth.exceptions.WeakPasswordException;
-import com.traazu.auth_service.services.otp.change_password.ChangePasswordOtpService;
+import com.traazu.auth_service.redis.IpRateLimiter;
+import com.traazu.auth_service.redis.change_password.ChangePasswordOtpService;
 
 import lombok.AllArgsConstructor;
 
