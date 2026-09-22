@@ -1,4 +1,4 @@
-package com.traazu.auth_service.services.otp.change_password;
+package com.traazu.auth_service.redis.change_password;
 
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
