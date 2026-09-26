@@ -18,10 +18,8 @@ import com.traazu.auth_service.services.auth.exceptions.DuplicateEmailException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidRegistrationTokenException;
 import com.traazu.auth_service.services.auth.exceptions.PasswordMismatchException;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@AllArgsConstructor
 @Getter
 public abstract class SignUpService<T extends BaseUser, I extends SignUpInfos> {
 
@@ -33,6 +31,18 @@ public abstract class SignUpService<T extends BaseUser, I extends SignUpInfos> {
     private final Duration ipCoolDownTTL;
     private final Long maxAttempts;
     private final String ipRateLimitPrefix;
+
+    public SignUpService(AbstractBaseUserFactory<T, I> baseUserFactory, BaseUserRepository<T, UUID> baseUserRepository,
+            SignUpOtpService signUpOtpService, StringRedisTemplate redis, Duration ipCoolDownTTL, Long maxAttempts,
+            String ipRateLimitPrefix) {
+        this.baseUserFactory = baseUserFactory;
+        this.baseUserRepository = baseUserRepository;
+        this.signUpOtpService = signUpOtpService;
+        this.redis = redis;
+        this.ipCoolDownTTL = ipCoolDownTTL;
+        this.maxAttempts = maxAttempts;
+        this.ipRateLimitPrefix = ipRateLimitPrefix;
+    }
 
     public String sendVerificationCodeForSignUp(SignUpRequest request) {
 
@@ -53,7 +63,7 @@ public abstract class SignUpService<T extends BaseUser, I extends SignUpInfos> {
 
     public T completeInformation(I request) {
 
-        if (!signUpOtpService.verifyAndConsumeToken(request.getEmail(), request.getSignUpToken())) {
+        if (!signUpOtpService.checkToken(request.getEmail(), request.getSignUpToken())) {
             throw new InvalidRegistrationTokenException("Invalid or expired signup token");
         }
 
@@ -63,6 +73,8 @@ public abstract class SignUpService<T extends BaseUser, I extends SignUpInfos> {
 
         T baseUser = baseUserFactory.create(request);
         baseUserRepository.save(baseUser);
+
+        signUpOtpService.verifyAndConsumeToken(request.getEmail(), request.getSignUpToken());
 
         return baseUser;
 
