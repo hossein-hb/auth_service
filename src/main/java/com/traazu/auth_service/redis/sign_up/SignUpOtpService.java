@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import com.traazu.auth_service.domain.dtos.MessageResponse;
 import com.traazu.auth_service.redis.AbstractOtpService;
 import com.traazu.auth_service.redis.OtpGenerator;
 import com.traazu.auth_service.redis.RedisAttemptManager;
@@ -26,7 +27,7 @@ public class SignUpOtpService extends AbstractOtpService {
         this.prefixes = prefixes;
     }
 
-    public String generateAndSaveOtp(String username) {
+    public MessageResponse generateAndSaveOtp(String username) {
 
         String lockKey = prefixes.getLockPrefix() + username;
         String otpKey = prefixes.getOtpPrefix() + username;
@@ -49,7 +50,7 @@ public class SignUpOtpService extends AbstractOtpService {
             ));
         }
 
-        return otpCode;
+        return new MessageResponse("Verification code sent successfully.");
     }
 
     public String verifyAndConsumeOtp(String username, String code) {

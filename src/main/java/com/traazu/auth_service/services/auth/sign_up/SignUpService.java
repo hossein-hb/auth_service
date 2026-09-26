@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import com.traazu.auth_service.domain.dtos.CheckIpRequest;
+import com.traazu.auth_service.domain.dtos.MessageResponse;
 import com.traazu.auth_service.domain.dtos.auth.OtpVerificationRequest;
 import com.traazu.auth_service.domain.dtos.auth.SignUpRequest;
 import com.traazu.auth_service.domain.dtos.auth.sign_up.SignUpInfos;
@@ -44,7 +45,7 @@ public abstract class SignUpService<T extends BaseUser, I extends SignUpInfos> {
         this.ipRateLimitPrefix = ipRateLimitPrefix;
     }
 
-    public String sendVerificationCodeForSignUp(SignUpRequest request) {
+    public MessageResponse sendVerificationCodeForSignUp(SignUpRequest request) {
 
         checkIpRateLimit(request.ipAddress());
 
