@@ -1,12 +1,10 @@
 package com.traazu.auth_service.services.auth;
 
 import java.time.Duration;
-import java.util.regex.Pattern;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.traazu.auth_service.domain.dtos.ChangePasswordRequest;
 import com.traazu.auth_service.domain.dtos.CheckIpRequest;
@@ -17,11 +15,11 @@ import com.traazu.auth_service.domain.entities.User;
 import com.traazu.auth_service.domain.enums.UserRole;
 import com.traazu.auth_service.repositories.StaffRepository;
 import com.traazu.auth_service.repositories.UserRepository;
+import com.traazu.auth_service.services.auth.exceptions.InvalidRegistrationTokenException;
 import com.traazu.auth_service.services.auth.exceptions.PasswordMismatchException;
 import com.traazu.auth_service.services.auth.exceptions.RoleNotFoundException;
 import com.traazu.auth_service.services.auth.exceptions.RoleNotSetException;
 import com.traazu.auth_service.services.auth.exceptions.UserNotFoundException;
-import com.traazu.auth_service.services.auth.exceptions.WeakPasswordException;
 import com.traazu.auth_service.redis.IpRateLimiter;
 import com.traazu.auth_service.redis.change_password.ChangePasswordOtpService;
 
@@ -40,9 +38,6 @@ public class ForgetPasswordService {
     private static final Duration IP_COOLDOWN_TTL = Duration.ofMinutes(5);
     private static final Long MAX_ATTEMPTS = 20L;
     private static final String IP_RATE_LIMIT = "ratelimit:forget:password:ip:";
-
-    private static final Pattern PASSWORD_PATTERN =
-        Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!*()_\\-]).{8,72}$");
 
     private User resolveUser(String email) {
         return userRepository.findByEmail(email)
@@ -102,14 +97,10 @@ public class ForgetPasswordService {
         return changePasswordOtpService.verifyAndConsumeOtp(request.email(), request.otpCode());
     }
 
-    @Transactional
     public void setNewPassword(ChangePasswordRequest request) {
 
-        if (!PASSWORD_PATTERN.matcher(request.newPassword()).matches()) {
-            throw new WeakPasswordException(
-                "Password must contain at least 8 characters (max 72), " +
-                "one uppercase, one lowercase, one number and one special character."
-            );
+        if (!changePasswordOtpService.checkToken(request.email(), request.token())) {
+            throw new InvalidRegistrationTokenException("Invalid or expired token");
         }
 
         if (!request.newPassword().equals(request.repeatNewPassword())) {
