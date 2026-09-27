@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 import com.traazu.auth_service.domain.dtos.CheckIpRequest;
 import com.traazu.auth_service.domain.dtos.MessageResponse;
+import com.traazu.auth_service.domain.dtos.TokenResponse;
 import com.traazu.auth_service.domain.dtos.auth.OtpVerificationRequest;
 import com.traazu.auth_service.domain.dtos.auth.SignUpRequest;
 import com.traazu.auth_service.domain.dtos.auth.sign_up.SignUpInfos;
@@ -58,8 +59,9 @@ public abstract class SignUpService<T extends BaseUser, I extends SignUpInfos> {
         return signUpOtpService.generateAndSaveOtp(request.email());
     }
 
-    public String checkVerificationCodeForSignUp(OtpVerificationRequest request) {
-        return signUpOtpService.verifyAndConsumeOtp(request.email(), request.otpCode());
+    public TokenResponse checkVerificationCodeForSignUp(OtpVerificationRequest request) {
+        String token = signUpOtpService.verifyAndConsumeOtp(request.email(), request.otpCode());
+        return TokenResponse.of(token);
     }
 
     public T completeInformation(I request) {
