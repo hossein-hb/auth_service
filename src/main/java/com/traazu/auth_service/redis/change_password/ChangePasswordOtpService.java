@@ -106,6 +106,18 @@ public class ChangePasswordOtpService extends AbstractOtpService {
         return token;
     }
 
+    public boolean checkToken(String username, String token) {
+
+        if (username == null || token == null) {
+            return false;
+        }
+
+        String key = prefixes.getTokenPrefix() + username;
+        String storedToken = getRedis().opsForValue().get(key);
+
+        return token.equals(storedToken);
+    }
+
     public UserRole verifyAndConsumeTokenAndReturnRole(String username, String token) {
         String key = prefixes.getTokenPrefix() + username;
 
