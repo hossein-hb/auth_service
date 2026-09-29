@@ -16,14 +16,15 @@ import com.traazu.auth_service.services.auth.exceptions.InvalidOtpException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidTokenException;
 import com.traazu.auth_service.services.auth.exceptions.TokenMismatchException;
 import com.traazu.auth_service.services.auth.exceptions.TooManyRequestsException;
+import com.traazu.auth_service.services.mail.EmailService;
 
 public class SignUpOtpService extends AbstractOtpService {
 
     private final SignUpRedisPrefixes prefixes;
 
     public SignUpOtpService(StringRedisTemplate redis, OtpGenerator otpGenerator, RedisLockManager lockManager,
-            RedisAttemptManager attemptManager, SignUpRedisPrefixes prefixes) {
-        super(redis, otpGenerator, lockManager, attemptManager);
+            RedisAttemptManager attemptManager, SignUpRedisPrefixes prefixes, EmailService emailService) {
+        super(redis, otpGenerator, lockManager, attemptManager, emailService);
         this.prefixes = prefixes;
     }
 
@@ -49,6 +50,8 @@ public class SignUpOtpService extends AbstractOtpService {
                 remainingSeconds == 0 ? 120 : remainingSeconds
             ));
         }
+
+        getEmailService().sendOtp(username, otpCode);
 
         return new MessageResponse("Verification code sent successfully.");
     }
