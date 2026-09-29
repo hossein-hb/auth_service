@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.traazu.auth_service.domain.dtos.ChangePasswordRequest;
 import com.traazu.auth_service.domain.dtos.CheckIpRequest;
 import com.traazu.auth_service.domain.dtos.ForgetPasswordRequest;
+import com.traazu.auth_service.domain.dtos.MessageResponse;
 import com.traazu.auth_service.domain.dtos.auth.OtpVerificationRequest;
 import com.traazu.auth_service.domain.entities.Staff;
 import com.traazu.auth_service.domain.entities.User;
@@ -81,7 +82,7 @@ public class ForgetPasswordService {
         }
     }
 
-    public String sendVerificationOtpCode(ForgetPasswordRequest request) {
+    public MessageResponse sendVerificationOtpCode(ForgetPasswordRequest request) {
 
         checkIpRateLimit(request.ipAddress());
         
