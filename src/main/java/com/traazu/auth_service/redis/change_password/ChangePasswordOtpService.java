@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
 
+import com.traazu.auth_service.domain.dtos.MessageResponse;
 import com.traazu.auth_service.domain.enums.UserRole;
 import com.traazu.auth_service.redis.AbstractOtpService;
 import com.traazu.auth_service.redis.OtpGenerator;
@@ -16,18 +18,20 @@ import com.traazu.auth_service.services.auth.exceptions.InvalidOtpException;
 import com.traazu.auth_service.services.auth.exceptions.InvalidTokenException;
 import com.traazu.auth_service.services.auth.exceptions.RoleNotFoundException;
 import com.traazu.auth_service.services.auth.exceptions.TooManyRequestsException;
+import com.traazu.auth_service.services.mail.EmailService;
 
+@Component
 public class ChangePasswordOtpService extends AbstractOtpService {
 
     private final ChangePasswordRedisPrefixes prefixes;
 
     public ChangePasswordOtpService(StringRedisTemplate redis, OtpGenerator otpGenerator, RedisLockManager lockManager,
-            RedisAttemptManager attemptManager, ChangePasswordRedisPrefixes prefixes) {
-        super(redis, otpGenerator, lockManager, attemptManager);
+            RedisAttemptManager attemptManager, ChangePasswordRedisPrefixes prefixes, EmailService emailService) {
+        super(redis, otpGenerator, lockManager, attemptManager, emailService);
         this.prefixes = prefixes;
     }
 
-    public String generateAndSaveOtp(String username, UserRole role) {
+    public MessageResponse generateAndSaveOtp(String username, UserRole role) {
 
         String lockKey = prefixes.getLockPrefix() + username;
         String otpKey  = prefixes.getOtpPrefix() + username;
@@ -53,7 +57,10 @@ public class ChangePasswordOtpService extends AbstractOtpService {
             ));
         }
 
-        return otpCode;
+        getEmailService().sendOtp(username, otpCode);
+
+        return new MessageResponse("Verification code sent successfully.");
+        
     }
 
 
