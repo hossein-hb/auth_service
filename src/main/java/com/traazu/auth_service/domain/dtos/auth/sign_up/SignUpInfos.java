@@ -1,11 +1,7 @@
 package com.traazu.auth_service.domain.dtos.auth.sign_up;
 
-import com.traazu.auth_service.domain.dtos.auth.DeviceInfo;
-
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -14,9 +10,6 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public abstract class SignUpInfos {
-
-    @NotBlank(message = "The ipAddress has not been defined.")
-    private final String ipAddress;
 
     @NotBlank(message = "The token has not been defined.")
     private final String signUpToken;
@@ -44,9 +37,5 @@ public abstract class SignUpInfos {
     @Size(max = 100)
     @NotBlank(message = "The repeatPassword has not been defined.")
     private final String repeatPassword;
-
-    @NotNull(message = "The deviceInfo has not been defined.")
-    @Valid 
-    private final DeviceInfo deviceInfo;
     
 }

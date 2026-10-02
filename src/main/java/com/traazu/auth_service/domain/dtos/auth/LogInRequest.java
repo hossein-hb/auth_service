@@ -7,9 +7,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record LogInRequest(
 
-    @NotBlank(message = "The ipAddress has not been defined.")
-    String ipAddress,
-
     @NotBlank(message = "The username has not been defined.")
     String username,
 
@@ -17,9 +14,6 @@ public record LogInRequest(
     String password,
 
     @NotNull(message = "The role has not been defined.")
-    UserRole role,
-
-    @NotNull(message = "The deviceInfo has not been defined.")
-    DeviceInfo deviceInfo
+    UserRole role
     
 ) {}
