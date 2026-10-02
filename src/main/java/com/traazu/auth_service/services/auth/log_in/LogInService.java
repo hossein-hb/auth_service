@@ -8,8 +8,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.traazu.auth_service.domain.dtos.CheckIpRequest;
-import com.traazu.auth_service.domain.dtos.auth.AuthResponse;
+import com.traazu.auth_service.domain.dtos.auth.ClientDeviceInfo;
 import com.traazu.auth_service.domain.dtos.auth.LogInRequest;
+import com.traazu.auth_service.domain.dtos.auth.LogInResult;
 import com.traazu.auth_service.domain.entities.BaseUser;
 import com.traazu.auth_service.domain.enums.AccountStatus;
 import com.traazu.auth_service.domain.enums.UserRole;
@@ -50,9 +51,9 @@ public class LogInService {
         this.redis = redis;
     }
 
-    public AuthResponse logIn(LogInRequest request) {
+    public LogInResult logIn(LogInRequest request, String ipAddress, ClientDeviceInfo clientInfo) {
 
-        checkIpRateLimit(request.ipAddress());
+        checkIpRateLimit(ipAddress);
 
         String userKey = LogInRedisPrefixes.USERNAME_RATE_LIMIT + request.username();
         String attemptsStr = redis.opsForValue().get(userKey);
@@ -77,13 +78,10 @@ public class LogInService {
         
         String accessJwtToken = jwtUtil.generateAccessToken(new CustomUserDetails(baseUser));
         String refreshJwtToken = jwtUtil.generateRefreshToken(baseUser.getId());
-        
-        String deviceId = (request.deviceInfo() != null) ? request.deviceInfo().deviceId() : null;
-        String deviceName = (request.deviceInfo() != null) ? request.deviceInfo().deviceName() : "Unknown Device";
 
-        refreshTokenService.saveRefreshToken(baseUser.getId(), refreshJwtToken, deviceId, deviceName);
+        refreshTokenService.saveRefreshToken(baseUser.getId(), refreshJwtToken, ipAddress, clientInfo);
 
-        return new AuthResponse(accessJwtToken, refreshJwtToken);
+        return new LogInResult(accessJwtToken, refreshJwtToken);
         
     }
 
