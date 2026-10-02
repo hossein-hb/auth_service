@@ -46,9 +46,9 @@ public abstract class SignUpService<T extends BaseUser, I extends SignUpInfos> {
         this.ipRateLimitPrefix = ipRateLimitPrefix;
     }
 
-    public MessageResponse sendVerificationCodeForSignUp(SignUpRequest request) {
+    public MessageResponse sendVerificationCodeForSignUp(SignUpRequest request, String ipAddress) {
 
-        checkIpRateLimit(request.ipAddress());
+        checkIpRateLimit(ipAddress);
 
         if (baseUserRepository.existsByEmail(request.email())) {
             throw new DuplicateEmailException(
