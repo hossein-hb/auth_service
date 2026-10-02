@@ -2,6 +2,7 @@ package com.traazu.auth_service.services.auth;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -10,7 +11,10 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
+import com.traazu.auth_service.domain.dtos.auth.ClientDeviceInfo;
 import com.traazu.auth_service.security.JwtUtil;
+
+import jakarta.validation.constraints.NotNull;
 
 @Service
 public class RefreshTokenService {
@@ -36,7 +40,9 @@ public class RefreshTokenService {
         this.saveTokenScript = new DefaultRedisScript<>(getLuaScriptText(), String.class);
     }
 
-    public void saveRefreshToken(UUID userId, String token, String deviceId, String deviceName) {
+    public void saveRefreshToken(UUID userId, String token, String ipAddress, 
+            @NotNull(message = "ClientDeviceInfo cannot be null") ClientDeviceInfo clientInfo) {
+
         String jti = jwtUtil.extractJwtId(token);
         long now = System.currentTimeMillis();
         String userKey = USER_TOKENS_PREFIX + userId;
@@ -49,8 +55,10 @@ public class RefreshTokenService {
             String.valueOf(refreshTokenExpiration.toMillis()),
             String.valueOf(MAX_ACTIVE_DEVICES),
             userId.toString(),
-            deviceId == null ? "" : deviceId,
-            deviceName == null ? "" : deviceName
+            clientInfo.os() == null ? "Unknown" : clientInfo.os(),
+            clientInfo.deviceType() == null ? "Unknown" : clientInfo.deviceType(),
+            clientInfo.browser() == null ? "Unknown" : clientInfo.browser(),
+            ipAddress == null ? "Unknown" : ipAddress
         );
     }
 
@@ -63,17 +71,21 @@ public class RefreshTokenService {
             local ttl = tonumber(ARGV[3])
             local maxDevices = tonumber(ARGV[4])
             local userId = ARGV[5]
-            local deviceId = ARGV[6]
-            local deviceName = ARGV[7]
+            local os = ARGV[6]
+            local deviceType = ARGV[7]
+            local browser = ARGV[8]
+            local ipAddress = ARGV[9]
 
             local cutoff = tonumber(now) - ttl
             redis.call('ZREMRANGEBYSCORE', userKey, 0, cutoff)
 
             local tokenKey = tokenKeyPrefix .. jti
-            redis.call('HMSET', tokenKey,
+            redis.call('HSET', tokenKey,
                 'userId', userId,
-                'deviceId', deviceId,
-                'deviceName', deviceName,
+                'os', os,
+                'deviceType', deviceType,
+                'browser', browser,
+                'ipAddress', ipAddress,
                 'createdAt', now
             )
             redis.call('PEXPIRE', tokenKey, ttl)
@@ -101,12 +113,41 @@ public class RefreshTokenService {
     }
 
     public void revokeRefreshToken(UUID userId, String jti) {
-        String redisKey = USER_TOKENS_PREFIX + userId;
-        redis.opsForZSet().remove(redisKey, jti);
+        String userKey = USER_TOKENS_PREFIX + userId;
+        redis.opsForZSet().remove(userKey, jti);
+        redis.delete(TOKEN_PREFIX + jti);
     }
 
     public void revokeAllSessions(UUID userId) {
-        String redisKey = USER_TOKENS_PREFIX + userId;
-        redis.delete(redisKey);
+        String userKey = USER_TOKENS_PREFIX + userId;
+        Set<String> jtis = redis.opsForZSet().range(userKey, 0, -1);
+        if (jtis != null && !jtis.isEmpty()) {
+            List<String> tokenKeys = jtis.stream()
+                    .map(jti -> TOKEN_PREFIX + jti)
+                    .toList();
+            redis.delete(tokenKeys);
+        }
+        redis.delete(userKey);
     }
+
+    public boolean validateRefreshToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return false;
+        }
+
+        try {
+            UUID userId = jwtUtil.extractId(refreshToken);
+            String jti = jwtUtil.extractJwtId(refreshToken);
+
+            if (!jwtUtil.isRefreshTokenValid(refreshToken)) {
+                return false;
+            }
+
+            return isSessionActive(userId, jti);
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }
