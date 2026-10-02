@@ -10,13 +10,16 @@ import com.traazu.auth_service.domain.dtos.BaseUserProfileDto;
 import com.traazu.auth_service.domain.dtos.MessageResponse;
 import com.traazu.auth_service.domain.dtos.TokenResponse;
 import com.traazu.auth_service.domain.dtos.auth.AuthResponse;
+import com.traazu.auth_service.domain.dtos.auth.ClientDeviceInfo;
 import com.traazu.auth_service.domain.dtos.auth.OtpVerificationRequest;
 import com.traazu.auth_service.domain.dtos.auth.SignUpRequest;
 import com.traazu.auth_service.domain.dtos.auth.sign_up.impl.StaffSignUpInfos;
 import com.traazu.auth_service.domain.dtos.auth.sign_up.impl.UserSignUpInfos;
+import com.traazu.auth_service.services.auth.UserAgentParser;
 import com.traazu.auth_service.services.auth.sign_up.impl.StaffSignUpService;
 import com.traazu.auth_service.services.auth.sign_up.impl.UserSignUpService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,10 +38,13 @@ public class SignUpController {
 
     @PostMapping("/signup/send-code")
     public ResponseEntity<MessageResponse> sendVerificationCode(
-            @Valid @RequestBody SignUpRequest request) {
+            @Valid @RequestBody SignUpRequest request, 
+            HttpServletRequest httpServletRequest) {
+
+        String ipAddress = httpServletRequest.getRemoteAddr();
         
-        log.info("درخواست ارسال کد تأیید برای ایمیل: {}", request.email());
-        MessageResponse message = userSignUpService.sendVerificationCodeForSignUp(request);
+        log.info("Request to send a verification code to the email address: {}", request.email());
+        MessageResponse message = userSignUpService.sendVerificationCodeForSignUp(request, ipAddress);
         return ResponseEntity.ok(message);
     }
 
@@ -55,8 +61,16 @@ public class SignUpController {
     }
 
     @PostMapping("/user/complete_signup")
-    public ResponseEntity<AuthResponse> completeStaffSignUp(@Valid @RequestBody UserSignUpInfos userSignUpInfos) {
-        AuthResponse authResponse = userSignUpService.completeSignUp(userSignUpInfos);
+    public ResponseEntity<AuthResponse> completeUserSignUp(
+                @Valid @RequestBody UserSignUpInfos userSignUpInfos, 
+                HttpServletRequest httpServletRequest) {
+
+        String ipAddress = httpServletRequest.getRemoteAddr();
+        String userAgent = httpServletRequest.getHeader("User-Agent");
+
+        ClientDeviceInfo clientInfo = UserAgentParser.parse(userAgent);
+
+        AuthResponse authResponse = userSignUpService.completeSignUp(userSignUpInfos, ipAddress, clientInfo);
         return ResponseEntity.ok(authResponse);
     }
     
