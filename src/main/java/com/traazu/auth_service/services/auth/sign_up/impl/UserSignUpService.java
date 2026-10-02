@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.traazu.auth_service.domain.dtos.auth.AuthResponse;
+import com.traazu.auth_service.domain.dtos.auth.ClientDeviceInfo;
 import com.traazu.auth_service.domain.dtos.auth.sign_up.impl.UserSignUpInfos;
 import com.traazu.auth_service.domain.entities.User;
 import com.traazu.auth_service.domain.factory.UserFactory;
@@ -17,6 +18,9 @@ import com.traazu.auth_service.security.CustomUserDetails;
 import com.traazu.auth_service.security.JwtUtil;
 import com.traazu.auth_service.services.auth.RefreshTokenService;
 import com.traazu.auth_service.services.auth.sign_up.SignUpService;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Service
 public class UserSignUpService extends SignUpService<User, UserSignUpInfos> {
@@ -43,18 +47,17 @@ public class UserSignUpService extends SignUpService<User, UserSignUpInfos> {
 
     }
 
-    public AuthResponse completeSignUp(UserSignUpInfos request) {
+    public AuthResponse completeSignUp(UserSignUpInfos request, 
+                @NotBlank(message = "IP address is required") String ipAddress,
+                @NotNull(message = "Client device information is required") ClientDeviceInfo clientInfo) {
         User user = completeInformation(request);
         
         String accessJwtToken = jwtUtil.generateAccessToken(new CustomUserDetails(user));
         String refreshJwtToken = jwtUtil.generateRefreshToken(user.getId());
-        
-        String deviceId = (request.getDeviceInfo() != null) ? request.getDeviceInfo().deviceId() : null;
-        String deviceName = (request.getDeviceInfo() != null) ? request.getDeviceInfo().deviceName() : "Unknown Device";
 
-        refreshTokenService.saveRefreshToken(user.getId(), refreshJwtToken, deviceId, deviceName);
+        refreshTokenService.saveRefreshToken(user.getId(), refreshJwtToken, ipAddress, clientInfo);
 
-        return new AuthResponse(accessJwtToken, refreshJwtToken);
+        return new AuthResponse(accessJwtToken);
     }
     
 }
