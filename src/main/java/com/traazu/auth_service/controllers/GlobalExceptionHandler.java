@@ -31,6 +31,21 @@ public class GlobalExceptionHandler {
 
     }
 
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(
+            InvalidRefreshTokenException ex, HttpServletRequest request) {
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                                            LocalDateTime.now(),
+                                            HttpStatus.UNAUTHORIZED.value(),
+                                            "UNAUTHORIZED",
+                                            ex.getMessage(),
+                                            request.getRequestURI()
+                                        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+        
+    }
+
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException ex, HttpServletRequest request) {
 
