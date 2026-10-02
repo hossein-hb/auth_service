@@ -49,6 +49,10 @@ public class JwtUtil {
         return claimsResolver.apply(allClaims);
     }
 
+    public String extractTokenType(String token) {
+        return extractClaim(token, claims -> claims.get("type", String.class));
+    }
+
     public UUID extractId(String token) {
         String userIdStr = extractClaim(token, claims -> claims.getSubject());
         return userIdStr == null ? null : UUID.fromString(userIdStr);
@@ -59,6 +63,7 @@ public class JwtUtil {
         extraClaims.put("role", customUserDetails.getRole().name());
         extraClaims.put("userId", customUserDetails.getId().toString());
         extraClaims.put("email", customUserDetails.getUsername());
+        extraClaims.put("type", TokenType.ACCESS_TOKEN.name());
         return buildToken(customUserDetails.getId().toString(), extraClaims, accessTokenExpiration);
     }
 
@@ -79,7 +84,9 @@ public class JwtUtil {
     }
 
     public String generateRefreshToken(UUID userId) {
-        return buildToken(userId.toString(), null, refreshTokenExpiration);
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("type", TokenType.REFRSH_TOKEN.name());
+        return buildToken(userId.toString(), extraClaims, refreshTokenExpiration);
     }
 
     public boolean isTokenExpired(String token) {
@@ -115,6 +122,14 @@ public class JwtUtil {
     private SecretKey getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public boolean isRefreshTokenValid(String refreshToken) {
+        String tokenType = extractTokenType(refreshToken);
+        if (!TokenType.REFRSH_TOKEN.name().equals(tokenType)) {
+            return false;
+        }
+        return true;
     }
     
 }
