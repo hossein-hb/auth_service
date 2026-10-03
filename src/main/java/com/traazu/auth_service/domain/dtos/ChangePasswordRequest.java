@@ -10,9 +10,6 @@ import jakarta.validation.constraints.Size;
 
 public record ChangePasswordRequest(
 
-    @NotBlank(message = "The ipAddress has not been defined.")
-    String ipAddress,
-
     @NotBlank(message = "Invalid or expired token.")
     String token,
 
