@@ -10,6 +10,7 @@ import com.traazu.auth_service.domain.dtos.ChangePasswordRequest;
 import com.traazu.auth_service.domain.dtos.CheckIpRequest;
 import com.traazu.auth_service.domain.dtos.ForgetPasswordRequest;
 import com.traazu.auth_service.domain.dtos.MessageResponse;
+import com.traazu.auth_service.domain.dtos.TokenResponse;
 import com.traazu.auth_service.domain.dtos.auth.OtpVerificationRequest;
 import com.traazu.auth_service.domain.entities.Staff;
 import com.traazu.auth_service.domain.entities.User;
@@ -82,9 +83,9 @@ public class ForgetPasswordService {
         }
     }
 
-    public MessageResponse sendVerificationOtpCode(ForgetPasswordRequest request) {
+    public MessageResponse sendVerificationOtpCode(ForgetPasswordRequest request, String ipAddress) {
 
-        checkIpRateLimit(request.ipAddress());
+        checkIpRateLimit(ipAddress);
         
         if (request.userRole() == null) {
             throw new RoleNotSetException("The role is not set!");
@@ -94,25 +95,32 @@ public class ForgetPasswordService {
         return changePasswordOtpService.generateAndSaveOtp(request.email(), request.userRole());
     }
 
-    public String verifyOtpAndIssueChangePasswordToken(OtpVerificationRequest request) {
-        return changePasswordOtpService.verifyAndConsumeOtp(request.email(), request.otpCode());
+    public TokenResponse verifyOtpAndIssueChangePasswordToken(OtpVerificationRequest request) {
+        String token = changePasswordOtpService.verifyAndConsumeOtp(request.email(), request.otpCode());
+        return TokenResponse.of(token);
     }
 
-    public void setNewPassword(ChangePasswordRequest request) {
-
+    public MessageResponse setNewPassword(ChangePasswordRequest request) {
         if (!changePasswordOtpService.checkToken(request.email(), request.token())) {
             throw new InvalidRegistrationTokenException("Invalid or expired token");
         }
 
         if (!request.newPassword().equals(request.repeatNewPassword())) {
-            throw new PasswordMismatchException("Password does not match the repeated password!");
+            throw new PasswordMismatchException(
+                    "Password does not match the repeated password!"
+            );
         }
 
         UserRole role = changePasswordOtpService
-                .verifyAndConsumeTokenAndReturnRole(request.email(), request.token());
+                .verifyAndConsumeTokenAndReturnRole(
+                        request.email(),
+                        request.token()
+                );
 
         String hashedPassword = passwordEncoder.encode(request.newPassword());
         applyNewPassword(request.email(), role, hashedPassword);
+
+        return new MessageResponse("Password changed successfully!");
     }
 
     private void checkIpRateLimit(String ipAddress) {
