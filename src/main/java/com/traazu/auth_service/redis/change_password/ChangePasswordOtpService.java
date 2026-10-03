@@ -120,7 +120,16 @@ public class ChangePasswordOtpService extends AbstractOtpService {
         }
 
         String key = prefixes.getTokenPrefix() + username;
-        String storedToken = getRedis().opsForValue().get(key);
+        String stored = getRedis().opsForValue().get(key);
+
+        if (stored == null) {
+            return false;
+        }
+
+        // The stored value is "<token>:<role>"; compare only the token part,
+        // mirroring the TOKEN_CONSUMER Lua script.
+        int sep = stored.indexOf(':');
+        String storedToken = sep >= 0 ? stored.substring(0, sep) : stored;
 
         return token.equals(storedToken);
     }
