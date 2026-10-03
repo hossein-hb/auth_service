@@ -399,14 +399,12 @@ git diff
 
 ## 📜 License
 
-No license has currently been specified for this repository.
+This project is licensed under the **MIT License**.
+
+See the [LICENSE](LICENSE) file for the full license text.
 
 ---
 
 <div align="center">
-
-### 🔐 Auth Service
-
-**Spring Boot · Spring Security · JWT · Redis · PostgreSQL · React**
-
+  <sub>Released under the MIT License © 2026 Hossein HB</sub>
 </div>
