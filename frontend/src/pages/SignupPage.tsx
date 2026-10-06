@@ -6,6 +6,8 @@ import {
   type CompleteSignUpPayload,
   type TokenResponse,
 } from '../lib/auth';
+import GoogleSignInButton
+  from '../components/GoogleSignInButton';
 
 type Step = 1 | 2 | 3;
 
@@ -40,6 +42,8 @@ export default function SignupPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
+
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   const infoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,6 +122,29 @@ export default function SignupPage() {
     }
   };
 
+  const handleGoogleSuccess = async (idToken: string) => {
+    setGoogleSubmitting(true);
+
+    try {
+      const response = await authApi.googleSignIn(idToken);
+
+      localStorage.setItem(
+        'accessToken',
+        response.accessToken
+      );
+
+      navigate('/');
+    } catch (error) {
+      console.error(error);
+
+      setError(
+        'Google sign-up failed. Please try again.'
+      );
+    } finally {
+      setGoogleSubmitting(false);
+    }
+  };
+
   const handleResend = async () => {
     setError(null);
     setResending(true);
@@ -183,6 +210,47 @@ export default function SignupPage() {
     <div className="auth-card">
       <h1 className="auth-title">Create your account</h1>
       <p className="auth-subtitle">Three quick steps: email, code, profile.</p>
+
+      <GoogleSignInButton
+        text="signup_with"
+        onSuccess={handleGoogleSuccess}
+        onError={() =>
+          setError('Unable to initialize Google Sign-In.')
+        }
+      />
+
+      {googleSubmitting && (
+        <p className="auth-subtitle">
+          Creating your account with Google...
+        </p>
+      )}
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          margin: '20px 0',
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            height: '1px',
+            background: '#ddd',
+          }}
+        />
+
+        <span>OR</span>
+
+        <div
+          style={{
+            flex: 1,
+            height: '1px',
+            background: '#ddd',
+          }}
+        />
+      </div>
 
       <div className="steps" aria-label={`Step ${step} of 3`}>
         {[1, 2, 3].map((n) => (

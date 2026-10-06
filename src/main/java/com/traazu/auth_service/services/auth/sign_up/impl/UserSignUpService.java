@@ -7,16 +7,21 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.traazu.auth_service.domain.dtos.MessageResponse;
 import com.traazu.auth_service.domain.dtos.auth.AuthResponse;
 import com.traazu.auth_service.domain.dtos.auth.ClientDeviceInfo;
+import com.traazu.auth_service.domain.dtos.auth.SignUpRequest;
 import com.traazu.auth_service.domain.dtos.auth.sign_up.impl.UserSignUpInfos;
 import com.traazu.auth_service.domain.entities.User;
+import com.traazu.auth_service.domain.enums.AuthProvider;
 import com.traazu.auth_service.domain.factory.UserFactory;
 import com.traazu.auth_service.redis.sign_up.SignUpOtpService;
 import com.traazu.auth_service.repositories.BaseUserRepository;
 import com.traazu.auth_service.security.CustomUserDetails;
 import com.traazu.auth_service.security.JwtUtil;
 import com.traazu.auth_service.services.auth.RefreshTokenService;
+import com.traazu.auth_service.services.auth.exceptions.DuplicateEmailException;
+import com.traazu.auth_service.services.auth.exceptions.OAuth2AccountExistsException;
 import com.traazu.auth_service.services.auth.sign_up.SignUpService;
 
 import jakarta.validation.constraints.NotBlank;
@@ -32,9 +37,6 @@ public class UserSignUpService extends SignUpService<User, UserSignUpInfos> {
     private static final Long MAX_ATTEMPTS = 20L;
     private static final String IP_RATE_LIMIT = "ratelimit:user:signup:ip:";
 
-
-
-
     public UserSignUpService(UserFactory userFactory,
             BaseUserRepository<User, UUID> baseUserRepository, StringRedisTemplate redis, 
             JwtUtil jwtUtil, RefreshTokenService refreshTokenService, 
@@ -44,7 +46,23 @@ public class UserSignUpService extends SignUpService<User, UserSignUpInfos> {
                 IP_COOLDOWN_TTL, MAX_ATTEMPTS, IP_RATE_LIMIT);
         this.jwtUtil = jwtUtil;
         this.refreshTokenService = refreshTokenService;
+    }
 
+    @Override
+    public MessageResponse sendVerificationCodeForSignUp(SignUpRequest request, String ipAddress) {
+        getBaseUserRepository().findByEmail(request.email()).ifPresent(user -> {
+            if (AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
+                throw new OAuth2AccountExistsException(
+                    "You have already signed up using Google. Please log in with Google, set a password in your profile, and change your login method."
+                );
+            }
+            
+            throw new DuplicateEmailException(
+                "Email '" + request.email() + "' is already registered"
+            );
+        });
+
+        return super.sendVerificationCodeForSignUp(request, ipAddress);
     }
 
     public AuthResponse completeSignUp(UserSignUpInfos request, 

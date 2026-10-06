@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.traazu.auth_service.domain.enums.AccountStatus;
+import com.traazu.auth_service.domain.enums.AuthProvider;
 import com.traazu.auth_service.domain.enums.UserRole;
 
 import jakarta.persistence.Column;
@@ -49,7 +50,7 @@ public abstract class BaseUser {
     @Column(name = "email", nullable = false, updatable = false, unique = true)
     private String email;
 
-    @Column(name = "hashed_password", nullable = false, updatable = true)
+    @Column(name = "hashed_password", nullable = true, updatable = true)
     private String hashedPassword;
 
     @Enumerated(EnumType.STRING)
@@ -62,12 +63,24 @@ public abstract class BaseUser {
     @Column(name = "account_status", nullable = false)
     private AccountStatus accountStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false)
+    private AuthProvider authProvider;
+    
+    @Column(name = "google_subject", unique = true)
+    private String googleSubject;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     private void onCreate() {
+
         createdAt = LocalDateTime.now();
+
+        if (authProvider == null) {
+            authProvider = AuthProvider.LOCAL;
+        }
     }
-    
+
 }

@@ -17,6 +17,8 @@ public interface UserRepository extends BaseUserRepository<User, UUID> {
 
     boolean existsByEmail(String email);
 
+    Optional<User> findByGoogleSubject(String googleSubject);
+
     Page<User> findByAccountStatus(AccountStatus accountStatus, Pageable pageable);
-    
+
 }
